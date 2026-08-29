@@ -14,8 +14,11 @@ app.get('/', (req, res) => {
 
 app.get('/db-test', async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({ success: true, time: result.rows[0] });
+    const result = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public'
+      `);
+    res.json({ success: true, tables: result.rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
