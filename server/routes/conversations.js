@@ -51,4 +51,71 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Helper: check if a user belongs to a conversation
+async function isParticipant(conversationId, userId) {
+  const result = await pool.query(
+    'SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2',
+    [conversationId, userId]
+  );
+  return result.rows.length > 0;
+}
+
+// Get message history for a conversation
+router.get('/:conversationId/messages', async (req, res) => {
+  const { conversationId } = req.params;
+  const userId = req.userId;
+
+  try {
+    const allowed = await isParticipant(conversationId, userId);
+    if (!allowed) {
+      return res.status(403).json({ error: 'You are not a participant in this conversation' });
+    }
+
+    const result = await pool.query(
+      `SELECT messages.id, messages.content, messages.sender_id, messages.created_at,
+              users.username, users.display_name
+       FROM messages
+       JOIN users ON users.id = messages.sender_id
+       WHERE messages.conversation_id = $1
+       ORDER BY messages.created_at ASC`,
+      [conversationId]
+    );
+
+    res.json({ messages: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Send a message
+router.post('/:conversationId/messages', async (req, res) => {
+  const { conversationId } = req.params;
+  const { content } = req.body;
+  const userId = req.userId;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Message content is required' });
+  }
+
+  try {
+    const allowed = await isParticipant(conversationId, userId);
+    if (!allowed) {
+      return res.status(403).json({ error: 'You are not a participant in this conversation' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO messages (conversation_id, sender_id, content)
+       VALUES ($1, $2, $3)
+       RETURNING id, content, sender_id, created_at`,
+      [conversationId, userId, content.trim()]
+    );
+
+    res.status(201).json({ message: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 module.exports = router;
