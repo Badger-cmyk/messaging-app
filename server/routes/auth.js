@@ -112,4 +112,26 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
+router.put('/me', authenticateToken, async (req, res) => {
+  const { display_name, profile_picture, status_message } = req.body;
+  const userId = req.userId;
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET display_name = COALESCE($1, display_name),
+           profile_picture = COALESCE($2, profile_picture),
+           status_message = COALESCE($3, status_message)
+       WHERE id = $4
+       RETURNING id, username, email, display_name, profile_picture, status_message`,
+      [display_name, profile_picture, status_message, userId]
+    );
+
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error updating profile' });
+  }
+});
+
 module.exports = router;
