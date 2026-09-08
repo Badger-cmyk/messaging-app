@@ -23,6 +23,7 @@ client/*.sw?
 # server
 server/node_modules
 server/.env
+server/test-socket.js
 
 # general
 .DS_Store
