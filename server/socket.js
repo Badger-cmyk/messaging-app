@@ -47,7 +47,7 @@ module.exports = (io) => {
         const result = await pool.query(
           `INSERT INTO messages (conversation_id, sender_id, content)
            VALUES ($1, $2, $3)
-           RETURNING id, content, sender_id, created_at`,
+           RETURNING id, conversation_id, content, sender_id, created_at`,
           [conversationId, socket.userId, content.trim()]
         );
 

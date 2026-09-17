@@ -3,6 +3,7 @@ import { useAuth } from './context/useAuth';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Conversations from './pages/Conversations';
+import ChatView from './pages/ChatView';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -22,6 +23,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Conversations />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/conversations/:id"
+          element={
+            <ProtectedRoute>
+              <ChatView />
             </ProtectedRoute>
           }
         />
