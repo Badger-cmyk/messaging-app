@@ -7,6 +7,34 @@ const router = express.Router();
 // All conversation routes require a logged-in user
 router.use(authenticateToken);
 
+// Get all conversations for the logged-in user
+router.get('/', async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const result = await pool.query(
+      `SELECT conversations.id, conversations.name, conversations.is_group, conversations.created_at,
+              (
+                SELECT json_build_object('content', m.content, 'created_at', m.created_at)
+                FROM messages m
+                WHERE m.conversation_id = conversations.id
+                ORDER BY m.created_at DESC
+                LIMIT 1
+              ) AS last_message
+       FROM conversations
+       JOIN conversation_participants ON conversation_participants.conversation_id = conversations.id
+       WHERE conversation_participants.user_id = $1
+       ORDER BY conversations.created_at DESC`,
+      [userId]
+    );
+
+    res.json({ conversations: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch conversations' });
+  }
+});
+
 router.post('/', async (req, res) => {
   const { participantIds, name, isGroup } = req.body;
   const creatorId = req.userId;
