@@ -27,6 +27,7 @@ export default function Conversations() {
     <div>
       <header>
         <h1>Welcome, {user?.display_name}</h1>
+        <Link to="/profile">Edit Profile</Link>
         <button onClick={logout}>Logout</button>
       </header>
 

@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Conversations from './pages/Conversations';
 import ChatView from './pages/ChatView';
 import NewConversation from './pages/NewConversation';
+import Profile from './pages/Profile';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -40,6 +41,14 @@ function App() {
           element={
             <ProtectedRoute>
               <NewConversation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
