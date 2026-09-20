@@ -33,17 +33,19 @@ export default function Conversations() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <h2>Your Conversations</h2>
+      <Link to="/new-conversation">Start New Conversation</Link>
+
       {conversations.length === 0 ? (
         <p>No conversations yet.</p>
       ) : (
         <ul>
           {conversations.map((conv) => (
             <li key={conv.id}>
-    <Link to={`/conversations/${conv.id}`}>
-    <strong>{conv.name || (conv.is_group ? 'Group Chat' : 'Direct Message')}</strong>
-    {conv.last_message && <p>{conv.last_message.content}</p>}
-  </Link>
-</li>
+              <Link to={`/conversations/${conv.id}`}>
+                <strong>{conv.name || (conv.is_group ? 'Group Chat' : 'Direct Message')}</strong>
+                {conv.last_message && <p>{conv.last_message.content}</p>}
+              </Link>
+            </li>
           ))}
         </ul>
       )}

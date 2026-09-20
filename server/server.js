@@ -7,6 +7,7 @@ const pool = require('./db');
 
 const authRoutes = require('./routes/auth');
 const conversationRoutes = require('./routes/conversations');
+const userRoutes = require('./routes/users');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,6 +19,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/conversations', conversationRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running' });
