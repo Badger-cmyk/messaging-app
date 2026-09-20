@@ -35,6 +35,44 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get details for a specific conversation, including participants
+router.get('/:conversationId', async (req, res) => {
+  const { conversationId } = req.params;
+  const userId = req.userId;
+
+  try {
+    const allowed = await isParticipant(conversationId, userId);
+    if (!allowed) {
+      return res.status(403).json({ error: 'You are not a participant in this conversation' });
+    }
+
+    const convResult = await pool.query(
+      'SELECT id, name, is_group, created_by, created_at FROM conversations WHERE id = $1',
+      [conversationId]
+    );
+
+    if (convResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const participantsResult = await pool.query(
+      `SELECT users.id, users.username, users.display_name
+       FROM conversation_participants
+       JOIN users ON users.id = conversation_participants.user_id
+       WHERE conversation_participants.conversation_id = $1`,
+      [conversationId]
+    );
+
+    res.json({
+      conversation: convResult.rows[0],
+      participants: participantsResult.rows,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch conversation' });
+  }
+});
+
 router.post('/', async (req, res) => {
   const { participantIds, name, isGroup } = req.body;
   const creatorId = req.userId;

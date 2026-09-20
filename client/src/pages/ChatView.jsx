@@ -13,9 +13,11 @@ export default function ChatView() {
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
+  const [otherUser, setOtherUser] = useState(null);
+  const [isOnline, setIsOnline] = useState(false);
   const socketRef = useRef(null);
 
-  // Load message history once, when the conversation id or token changes
+  // Load message history
   useEffect(() => {
     axios
       .get(`${API_URL}/conversations/${id}/messages`, {
@@ -25,7 +27,29 @@ export default function ChatView() {
       .finally(() => setLoading(false));
   }, [id, token]);
 
-  // Set up the socket connection once, when this component mounts
+  // Load conversation details, find the other participant, check their status
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/conversations/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const other = res.data.participants.find((p) => p.id !== user.id);
+        setOtherUser(other);
+
+        if (other) {
+          return axios.get(`${API_URL}/users/${other.id}/status`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
+      })
+      .then((statusRes) => {
+        if (statusRes) setIsOnline(statusRes.data.is_online);
+      })
+      .catch((err) => console.error(err));
+  }, [id, token, user]);
+
+  // Socket connection
   useEffect(() => {
     const socket = io(SOCKET_URL, {
       auth: { token },
@@ -33,16 +57,27 @@ export default function ChatView() {
     socketRef.current = socket;
 
     socket.on('receive_message', (message) => {
-      // Only add it if it belongs to this conversation
       if (String(message.conversation_id) === String(id)) {
         setMessages((prev) => [...prev, message]);
+      }
+    });
+
+    socket.on('user_online', ({ userId }) => {
+      if (otherUser && String(userId) === String(otherUser.id)) {
+        setIsOnline(true);
+      }
+    });
+
+    socket.on('user_offline', ({ userId }) => {
+      if (otherUser && String(userId) === String(otherUser.id)) {
+        setIsOnline(false);
       }
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [id, token]);
+  }, [id, token, otherUser]);
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -60,7 +95,12 @@ export default function ChatView() {
 
   return (
     <div>
-      <h2>Conversation</h2>
+      <h2>
+        {otherUser?.display_name || otherUser?.username || 'Conversation'}{' '}
+        <span style={{ color: isOnline ? 'green' : 'gray' }}>
+          {isOnline ? '● Online' : '○ Offline'}
+        </span>
+      </h2>
       <div>
         {messages.map((msg) => (
           <div key={msg.id} style={{ textAlign: msg.sender_id === user.id ? 'right' : 'left' }}>
