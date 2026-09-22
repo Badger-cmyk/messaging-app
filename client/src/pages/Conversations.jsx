@@ -6,7 +6,7 @@ import axios from 'axios';
 const API_URL = 'http://localhost:5000/api';
 
 export default function Conversations() {
-  const { user, token, logout } = useAuth();
+  const { token, logout } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,35 +21,64 @@ export default function Conversations() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  if (loading) return <div>Loading conversations...</div>;
+  const initials = (name) =>
+    (name || '?')
+      .split(' ')
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
 
   return (
     <div>
-      <header>
-        <h1>Welcome, {user?.display_name}</h1>
-        <Link to="/profile">Edit Profile</Link>
-        <button onClick={logout}>Logout</button>
+      <header className="app-header">
+        <div className="wordmark">
+          Thread<span>.</span>
+        </div>
+        <div className="header-actions">
+          <Link to="/profile">Edit profile</Link>
+          <button className="btn-text" onClick={logout}>
+            Log out
+          </button>
+        </div>
       </header>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <div className="page-body">
+        <div className="section-heading">
+          <h2>Your conversations</h2>
+          <Link to="/new-conversation" className="btn-secondary">
+            New chat
+          </Link>
+        </div>
 
-      <h2>Your Conversations</h2>
-      <Link to="/new-conversation">Start New Conversation</Link>
+        {error && <p className="form-error">{error}</p>}
 
-      {conversations.length === 0 ? (
-        <p>No conversations yet.</p>
-      ) : (
-        <ul>
-          {conversations.map((conv) => (
-            <li key={conv.id}>
-              <Link to={`/conversations/${conv.id}`}>
-                <strong>{conv.name || (conv.is_group ? 'Group Chat' : 'Direct Message')}</strong>
-                {conv.last_message && <p>{conv.last_message.content}</p>}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+        {loading ? (
+          <p style={{ color: 'var(--ink-soft)' }}>Loading conversations…</p>
+        ) : conversations.length === 0 ? (
+          <div className="empty-state">
+            No conversations yet. Start one to say hello.
+          </div>
+        ) : (
+          <ul className="conversation-list">
+            {conversations.map((conv) => {
+              const label =
+                conv.name || (conv.is_group ? 'Group chat' : 'Direct message');
+              return (
+                <li key={conv.id} className="conversation-item">
+                  <Link to={`/conversations/${conv.id}`}>
+                    <div className="avatar">{initials(label)}</div>
+                    <div className="conversation-meta">
+                      <strong>{label}</strong>
+                      {conv.last_message && <p>{conv.last_message.content}</p>}
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
