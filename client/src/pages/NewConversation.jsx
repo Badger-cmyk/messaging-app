@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import axios from 'axios';
 
@@ -46,22 +46,46 @@ export default function NewConversation() {
 
   return (
     <div>
-      <h1>New Conversation</h1>
-      <input
-        type="text"
-        placeholder="Search by username or display name..."
-        value={query}
-        onChange={handleSearch}
-      />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <ul>
-        {results.map((u) => (
-          <li key={u.id}>
-            {u.display_name || u.username} (@{u.username})
-            <button onClick={() => startConversation(u.id)}>Start Chat</button>
-          </li>
-        ))}
-      </ul>
+      <header className="chat-header">
+        <Link to="/" className="chat-back" aria-label="Back to conversations">
+          ←
+        </Link>
+        <div className="chat-identity">
+          <h2>New conversation</h2>
+        </div>
+      </header>
+
+      <div className="page-body">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by username or display name"
+          value={query}
+          onChange={handleSearch}
+          aria-label="Search for someone to message"
+        />
+
+        {error && <p className="form-error">{error}</p>}
+
+        {results.length > 0 && (
+          <ul className="result-list">
+            {results.map((u) => (
+              <li key={u.id} className="result-item">
+                <div className="avatar">
+                  {(u.display_name || u.username)[0].toUpperCase()}
+                </div>
+                <div className="result-name">
+                  <strong>{u.display_name || u.username}</strong>
+                  <span>@{u.username}</span>
+                </div>
+                <button className="btn-secondary" onClick={() => startConversation(u.id)}>
+                  Message
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

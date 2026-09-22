@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import axios from 'axios';
 
@@ -36,36 +37,59 @@ export default function Profile() {
 
   return (
     <div>
-      <h1>Edit Profile</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Display Name
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-        </label>
-        <label>
-          Status Message
-          <input
-            type="text"
-            value={statusMessage}
-            onChange={(e) => setStatusMessage(e.target.value)}
-          />
-        </label>
-        <label>
-          Profile Picture URL
-          <input
-            type="text"
-            value={profilePicture}
-            onChange={(e) => setProfilePicture(e.target.value)}
-          />
-        </label>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>{success}</p>}
-        <button type="submit">Save Changes</button>
-      </form>
+      <header className="chat-header">
+        <Link to="/" className="chat-back" aria-label="Back to conversations">
+          ←
+        </Link>
+        <div className="chat-identity">
+          <h2>Edit profile</h2>
+        </div>
+      </header>
+
+      <div className="page-body">
+        <div className="form-card">
+          <form onSubmit={handleSubmit} noValidate>
+            {error && <p className="form-error">{error}</p>}
+            {success && <p className="form-success">{success}</p>}
+
+            <div className="field">
+              <label htmlFor="displayName">Display name</label>
+              <input
+                id="displayName"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="statusMessage">Status message</label>
+              <input
+                id="statusMessage"
+                type="text"
+                value={statusMessage}
+                onChange={(e) => setStatusMessage(e.target.value)}
+                placeholder="What's on your mind?"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="profilePicture">Profile picture URL</label>
+              <input
+                id="profilePicture"
+                type="text"
+                value={profilePicture}
+                onChange={(e) => setProfilePicture(e.target.value)}
+                placeholder="https://…"
+              />
+            </div>
+
+            <button type="submit" className="btn-primary">
+              Save changes
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
