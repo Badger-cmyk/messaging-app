@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import axios from 'axios';
 import { io } from 'socket.io-client';
@@ -16,8 +16,8 @@ export default function ChatView() {
   const [otherUser, setOtherUser] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
   const socketRef = useRef(null);
+  const scrollRef = useRef(null);
 
-  // Load message history
   useEffect(() => {
     axios
       .get(`${API_URL}/conversations/${id}/messages`, {
@@ -27,7 +27,6 @@ export default function ChatView() {
       .finally(() => setLoading(false));
   }, [id, token]);
 
-  // Load conversation details, find the other participant, check their status
   useEffect(() => {
     axios
       .get(`${API_URL}/conversations/${id}`, {
@@ -36,7 +35,6 @@ export default function ChatView() {
       .then((res) => {
         const other = res.data.participants.find((p) => p.id !== user.id);
         setOtherUser(other);
-
         if (other) {
           return axios.get(`${API_URL}/users/${other.id}/status`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -49,11 +47,8 @@ export default function ChatView() {
       .catch((err) => console.error(err));
   }, [id, token, user]);
 
-  // Socket connection
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      auth: { token },
-    });
+    const socket = io(SOCKET_URL, { auth: { token } });
     socketRef.current = socket;
 
     socket.on('receive_message', (message) => {
@@ -63,60 +58,74 @@ export default function ChatView() {
     });
 
     socket.on('user_online', ({ userId }) => {
-      if (otherUser && String(userId) === String(otherUser.id)) {
-        setIsOnline(true);
-      }
+      if (otherUser && String(userId) === String(otherUser.id)) setIsOnline(true);
     });
 
     socket.on('user_offline', ({ userId }) => {
-      if (otherUser && String(userId) === String(otherUser.id)) {
-        setIsOnline(false);
-      }
+      if (otherUser && String(userId) === String(otherUser.id)) setIsOnline(false);
     });
 
-    return () => {
-      socket.disconnect();
-    };
+    return () => socket.disconnect();
   }, [id, token, otherUser]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!content.trim()) return;
-
-    socketRef.current.emit('send_message', {
-      conversationId: id,
-      content: content.trim(),
-    });
-
+    socketRef.current.emit('send_message', { conversationId: id, content: content.trim() });
     setContent('');
   };
 
-  if (loading) return <div>Loading messages...</div>;
+  const name = otherUser?.display_name || otherUser?.username || 'Conversation';
 
   return (
     <div>
-      <h2>
-        {otherUser?.display_name || otherUser?.username || 'Conversation'}{' '}
-        <span style={{ color: isOnline ? 'green' : 'gray' }}>
-          {isOnline ? '● Online' : '○ Offline'}
-        </span>
-      </h2>
-      <div>
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ textAlign: msg.sender_id === user.id ? 'right' : 'left' }}>
-            <p>{msg.content}</p>
+      <header className="chat-header">
+        <Link to="/" className="chat-back" aria-label="Back to conversations">
+          ←
+        </Link>
+        <div className="chat-identity">
+          <h2>{name}</h2>
+          <div className="status-line">
+            <span className={`status-dot ${isOnline ? 'online' : ''}`} />
+            {isOnline ? 'Online' : 'Offline'}
           </div>
-        ))}
+        </div>
+      </header>
+
+      {loading ? (
+        <p style={{ padding: 20, color: 'var(--ink-soft)' }}>Loading messages…</p>
+      ) : (
+        <div className="message-scroll">
+          {messages.map((msg) => {
+            const mine = msg.sender_id === user.id;
+            return (
+              <div key={msg.id} className={`bubble-row ${mine ? 'mine' : ''}`}>
+                <div className={`bubble ${mine ? 'mine' : 'theirs'}`}>{msg.content}</div>
+              </div>
+            );
+          })}
+          <div ref={scrollRef} />
+        </div>
+      )}
+
+      <div className="composer">
+        <form onSubmit={handleSend}>
+          <input
+            type="text"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write a message"
+            aria-label="Message"
+          />
+          <button type="submit" className="btn-send">
+            Send
+          </button>
+        </form>
       </div>
-      <form onSubmit={handleSend}>
-        <input
-          type="text"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Type a message..."
-        />
-        <button type="submit">Send</button>
-      </form>
     </div>
   );
 }
